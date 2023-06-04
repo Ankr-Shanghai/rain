@@ -1,0 +1,20 @@
+[package]
+name = "rain"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+tokio = { version = "1.26.0", features = ["full"] }
+serde = { version = "*", features = ["derive"] }
+serde_json = { version = "*" }
+axum = { version = "*" }
+log = { version = "*" }
+log4rs = "*"
+clap = { version = "4.1.13", features = ["derive"] }
+dotenv = "*"
+config = "*"
+urlencoding = "*"
+chrono = { version = "*" }
+lazy_static = { version = "*" }
