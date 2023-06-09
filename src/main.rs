@@ -1,4 +1,4 @@
-use axum::{routing::get, Router};
+use axum::{routing::get, routing::post, Router};
 use log::{error, info};
 use log4rs;
 use std::sync::Arc;
@@ -7,8 +7,10 @@ use std::{
     process::exit,
 };
 
-mod handler;
+mod asist;
+mod handlers;
 mod models;
+mod router;
 
 #[tokio::main]
 async fn main() {
@@ -20,6 +22,9 @@ async fn main() {
         exit(-1)
     });
 
+    // init methods list
+    router::init();
+
     let cfg = models::Config::from_env().expect("parse env failed");
 
     let app_state = Arc::new(models::AppState { config: cfg });
@@ -29,8 +34,9 @@ async fn main() {
 
     // build application with a route
     let app = Router::new()
-        .route("/status", get(handler::health))
-        .route("/config", get(handler::config))
+        .route("/", post(router::router))
+        .route("/status", get(asist::health))
+        .route("/config", get(asist::config))
         .with_state(app_state);
 
     let host = args.host.parse::<IpAddr>().unwrap_or_else(|err| {
