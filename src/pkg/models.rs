@@ -7,20 +7,13 @@ pub struct AppState {
 
 #[derive(Deserialize)]
 pub struct DbConfig {
-    pub username: String,
-    pub password: String,
-    pub host: String,
-    pub port: u16,
+    pub path: String,
     pub dbname: String,
 }
 
 impl fmt::Display for DbConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "username:{} password:{} host:{} port:{} dbname:{}",
-            self.username, self.password, self.host, self.port, self.dbname
-        )
+        write!(f, "path:{} dbname:{} ", self.path, self.dbname)
     }
 }
 

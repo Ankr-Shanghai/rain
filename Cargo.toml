@@ -10,7 +10,8 @@ name = "pkg"
 path = "src/pkg/mod.rs"
 
 [dependencies]
-tokio = { version = "1.26.0", features = ["full"] }
+redb = { git = "https://github.com/cberner/redb.git", version = "1.0.1" }
+tokio = { version = "1.27.0", features = ["full"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = { version = "*" }
 axum = { version = "*" }
@@ -22,3 +23,4 @@ config = "*"
 urlencoding = "*"
 chrono = { version = "*" }
 lazy_static = { version = "*" }
+ethereum-types = { version = "0.14.1" }

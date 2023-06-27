@@ -1,5 +1,2 @@
-database.username="rpc_admin"
-database.password="rpcAdmin#123"
-database.host=127.0.0.1
-database.port=5432
+database.path=node
 database.dbname=rpc_data
