@@ -7,11 +7,6 @@ use std::{
     process::exit,
 };
 
-mod asist;
-mod handlers;
-mod models;
-mod router;
-
 #[tokio::main]
 async fn main() {
     dotenv::from_filename("env_file").ok();
@@ -23,20 +18,20 @@ async fn main() {
     });
 
     // init methods list
-    router::init();
+    pkg::router::init();
 
-    let cfg = models::Config::from_env().expect("parse env failed");
+    let cfg = pkg::models::Config::from_env().expect("parse env failed");
 
-    let app_state = Arc::new(models::AppState { config: cfg });
+    let app_state = Arc::new(pkg::models::AppState { config: cfg });
 
     // parse command arguments
     let args = Args::parse();
 
     // build application with a route
     let app = Router::new()
-        .route("/", post(router::router))
-        .route("/status", get(asist::health))
-        .route("/config", get(asist::config))
+        .route("/", post(pkg::router::router))
+        .route("/status", get(pkg::asist::health))
+        .route("/config", get(pkg::asist::config))
         .with_state(app_state);
 
     let host = args.host.parse::<IpAddr>().unwrap_or_else(|err| {

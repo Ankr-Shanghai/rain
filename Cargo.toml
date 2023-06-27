@@ -5,6 +5,10 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "pkg"
+path = "src/pkg/mod.rs"
+
 [dependencies]
 tokio = { version = "1.26.0", features = ["full"] }
 serde = { version = "*", features = ["derive"] }
