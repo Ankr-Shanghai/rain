@@ -24,3 +24,4 @@ urlencoding = "*"
 chrono = { version = "*" }
 lazy_static = { version = "*" }
 ethereum-types = { version = "0.14.1" }
+jsonrpc-core = { version = "18.0.0" }

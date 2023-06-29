@@ -1,25 +1,23 @@
-#![allow(dead_code, unused_imports)]
+#![allow(dead_code, unused_variables)]
 use jsonrpc_core::{params::Params, BoxFuture, Error, RpcMethodSimple, Value};
-use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct BalanceImpl {
+pub struct ChainIDImpl {
     result: String,
 }
 
-impl BalanceImpl {
+impl ChainIDImpl {
     pub fn new() -> Self {
-        BalanceImpl {
-            result: "0x5200".to_string(),
+        ChainIDImpl {
+            result: "0x38".to_string(),
         }
     }
 }
 
-impl RpcMethodSimple for BalanceImpl {
+impl RpcMethodSimple for ChainIDImpl {
     type Out = BoxFuture<Result<Value, Error>>;
     fn call(&self, params: Params) -> Self::Out {
-        info!("params: {:?}", params);
-        Box::pin(async move { Ok(Value::String("0x1fa0".to_string())) })
+        Box::pin(async move { Ok(Value::String("0x38".to_string())) })
     }
 }

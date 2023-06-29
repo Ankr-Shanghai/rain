@@ -1,8 +1,9 @@
+use jsonrpc_core::IoHandler;
 use serde::Deserialize;
 use std::fmt;
-
 pub struct AppState {
     pub config: Config,
+    pub io: IoHandler,
 }
 
 #[derive(Deserialize)]

@@ -17,18 +17,17 @@ async fn main() {
         exit(-1)
     });
 
-    // init methods list
-    pkg::router::init();
-
     let cfg = pkg::models::Config::from_env().expect("parse env failed");
+    let io = pkg::handlers::init_iohandlers();
 
-    let app_state = Arc::new(pkg::models::AppState { config: cfg });
+    let app_state = Arc::new(pkg::models::AppState { config: cfg, io });
 
     // parse command arguments
     let args = Args::parse();
 
     // build application with a route
     let app = Router::new()
+        // .route("/", post(pkg::router::router))
         .route("/", post(pkg::router::router))
         .route("/status", get(pkg::asist::health))
         .route("/config", get(pkg::asist::config))
