@@ -10,8 +10,8 @@ name = "pkg"
 path = "src/pkg/mod.rs"
 
 [dependencies]
-redb = { git = "https://github.com/cberner/redb.git", version = "1.0.1" }
-tokio = { version = "1.27.0", features = ["full"] }
+redb = { version = "1.0.1" }
+tokio = { version = "1.29.0", features = ["full"] }
 serde = { version = "*", features = ["derive"] }
 serde_json = { version = "*" }
 axum = { version = "*" }

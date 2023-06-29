@@ -1,0 +1,47 @@
+// Example code that deserializes and serializes the model.
+// extern crate serde;
+// #[macro_use]
+// extern crate serde_derive;
+// extern crate serde_json;
+//
+// use generated_module::[object Object];
+//
+// fn main() {
+//     let json = r#"{"answer": 42}"#;
+//     let model: [object Object] = serde_json::from_str(&json).unwrap();
+// }
+
+extern crate serde_derive;
+
+#[derive(Serialize, Deserialize)]
+pub struct Receipt {
+    #[serde(rename = "root")]
+    root: String,
+
+    #[serde(rename = "status")]
+    status: String,
+
+    #[serde(rename = "cumulativeGasUsed")]
+    cumulative_gas_used: String,
+
+    #[serde(rename = "logsBloom")]
+    logs_bloom: String,
+
+    #[serde(rename = "transactionHash")]
+    transaction_hash: String,
+
+    #[serde(rename = "contractAddress")]
+    contract_address: String,
+
+    #[serde(rename = "gasUsed")]
+    gas_used: String,
+
+    #[serde(rename = "blockHash")]
+    block_hash: String,
+
+    #[serde(rename = "blockNumber")]
+    block_number: String,
+
+    #[serde(rename = "transactionIndex")]
+    transaction_index: String,
+}

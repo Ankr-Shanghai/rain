@@ -3,7 +3,7 @@
 use super::database::DBI;
 use redb::{Database, Error, ReadOnlyTable, ReadableTable, TableDefinition};
 
-struct DB {
+pub struct DB {
     handler: Database,
 }
 
