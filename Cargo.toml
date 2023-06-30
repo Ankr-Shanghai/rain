@@ -10,6 +10,7 @@ name = "pkg"
 path = "src/pkg/mod.rs"
 
 [dependencies]
+keccak-hash = { version = "0.10.0" }
 redb = { version = "1.0.1" }
 tokio = { version = "1.29.0", features = ["full"] }
 serde = { version = "*", features = ["derive"] }
@@ -25,3 +26,4 @@ chrono = { version = "*" }
 lazy_static = { version = "*" }
 ethereum-types = { version = "0.14.1" }
 jsonrpc-core = { version = "18.0.0" }
+hex = { version = "0.4.3" }
