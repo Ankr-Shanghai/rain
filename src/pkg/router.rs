@@ -1,5 +1,5 @@
 #![allow(dead_code, unused_variables)]
-use crate::models::AppState;
+use crate::config::AppState;
 use axum::extract::State;
 use std::sync::Arc;
 

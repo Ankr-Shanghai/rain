@@ -1,4 +1,4 @@
-use crate::models::AppState;
+use crate::config::AppState;
 use axum::extract::State;
 use log::info;
 use std::sync::Arc;

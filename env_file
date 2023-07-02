@@ -1,2 +1,5 @@
 database.path=node
 database.dbname=rpc_data
+uris=https://rpc.ankr.com/bsc,https://dataseed1.binance.org,https://dataseed2.binance.org,https://dataseed3.binance.org,https://dataseed4.binance.org,https://dataseed1.defibit.io,https://dataseed2.defibit.io,https://dataseed3.defibit.io,https://dataseed4.defibit.io,https://dataseed1.ninicoin.io,https://dataseed2.ninicoin.io,https://dataseed3.ninicoin.io,https://dataseed4.ninicoin.io
+
+	

@@ -21,11 +21,12 @@ impl fmt::Display for DbConfig {
 #[derive(Deserialize)]
 pub struct Config {
     pub database: DbConfig,
+    pub uris: String,
 }
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "database: {}", self.database)
+        write!(f, "database: {} \n uris: {}", self.database, self.uris)
     }
 }
 

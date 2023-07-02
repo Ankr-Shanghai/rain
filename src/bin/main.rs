@@ -17,10 +17,10 @@ async fn main() {
         exit(-1)
     });
 
-    let cfg = pkg::models::Config::from_env().expect("parse env failed");
+    let cfg = pkg::config::Config::from_env().expect("parse env failed");
     let io = pkg::handlers::init_iohandlers();
 
-    let app_state = Arc::new(pkg::models::AppState { config: cfg, io });
+    let app_state = Arc::new(pkg::config::AppState { config: cfg, io });
 
     // parse command arguments
     let args = Args::parse();
