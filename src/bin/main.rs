@@ -1,7 +1,10 @@
+#![allow(unused_imports, unused_variables)]
 use axum::{routing::get, routing::post, Router};
 use log::{error, info};
 use log4rs;
-use std::sync::Arc;
+use pkg::endpoints;
+use std::collections::BinaryHeap;
+use std::sync::{Arc, Mutex};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     process::exit,
@@ -22,12 +25,20 @@ async fn main() {
 
     let app_state = Arc::new(pkg::config::AppState { config: cfg, io });
 
+    // boot routine to do sync remote service info
+    let heap_sort: BinaryHeap<endpoints::Node> = BinaryHeap::new();
+    let hs = Arc::new(Mutex::new(heap_sort));
+    let hsc = hs.clone();
+    let uris = app_state.config.uris.clone();
+    tokio::spawn(async move {
+        pkg::service::remote_info(Box::leak(uris.into_boxed_str()), hsc).await;
+    });
+
     // parse command arguments
     let args = Args::parse();
 
     // build application with a route
     let app = Router::new()
-        // .route("/", post(pkg::router::router))
         .route("/", post(pkg::router::router))
         .route("/status", get(pkg::asist::health))
         .route("/config", get(pkg::asist::config))

@@ -5,5 +5,5 @@ pub mod ethdb;
 pub mod handlers;
 pub mod router;
 pub mod rpc;
-pub mod sync;
+pub mod service;
 pub mod types;
