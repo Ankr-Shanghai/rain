@@ -30,8 +30,8 @@ impl Display for Node {
 impl Ord for Node {
     fn cmp(&self, other: &Self) -> Ordering {
         self.height
-            .cmp(&other.delay)
-            .then_with(|| self.delay.cmp(&other.delay))
+            .cmp(&other.height)
+            .then_with(|| other.delay.cmp(&self.delay))
     }
 }
 

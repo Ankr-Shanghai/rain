@@ -30,6 +30,7 @@ async fn main() {
     let hs = Arc::new(Mutex::new(heap_sort));
     let hsc = hs.clone();
     let uris = app_state.config.uris.clone();
+
     tokio::spawn(async move {
         pkg::service::remote_info(Box::leak(uris.into_boxed_str()), hsc).await;
     });
