@@ -6,14 +6,22 @@ use std::{
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Node {
-    url: String,
-    delay: u64,
-    height: u64,
+    pub url: String,
+    pub delay: u64,
+    pub height: u64,
 }
 
 impl Node {
     pub fn new(url: String, delay: u64, height: u64) -> Self {
         Self { url, delay, height }
+    }
+
+    pub fn get_url(&self) -> String {
+        self.url.clone()
+    }
+
+    pub fn get_height(&self) -> u64 {
+        self.height
     }
 }
 

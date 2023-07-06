@@ -1,5 +1,6 @@
 pub mod asist;
 pub mod config;
+pub mod constant;
 pub mod endpoints;
 pub mod ethdb;
 pub mod handlers;

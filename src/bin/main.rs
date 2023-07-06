@@ -21,7 +21,10 @@ async fn main() {
     });
 
     let cfg = pkg::config::Config::from_env().expect("parse env failed");
-    let io = pkg::handlers::init_iohandlers();
+    let db = Arc::new(Mutex::new(pkg::ethdb::store::DB::new(
+        cfg.database.path.clone(),
+    )));
+    let io = pkg::handlers::init_iohandlers(db.clone());
 
     let app_state = Arc::new(pkg::config::AppState { config: cfg, io });
 
@@ -33,6 +36,12 @@ async fn main() {
 
     tokio::spawn(async move {
         pkg::service::remote_info(Box::leak(uris.into_boxed_str()), hsc).await;
+    });
+
+    // init database and boot sync service
+    let mut service = pkg::service::Service::new(db);
+    tokio::spawn(async move {
+        service.sync(hs).await;
     });
 
     // parse command arguments
