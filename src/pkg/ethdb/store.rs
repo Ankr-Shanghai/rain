@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::constant;
 use redb::{Database, Error, ReadOnlyTable, ReadableTable, TableDefinition};
 
 pub struct DB {
@@ -56,6 +57,19 @@ impl DB {
         dbw.commit()?;
 
         Ok(true)
+    }
+
+    pub fn get_block_number(&self) -> Result<u64, Error> {
+        let tbl: TableDefinition<'_, &[u8], &[u8]> = TableDefinition::new(constant::GLOBAL_TABLE);
+        let dbr = self.handler.begin_read()?;
+        let tbr: ReadOnlyTable<'_, &[u8], &[u8]> = dbr.open_table(tbl)?;
+        let val = tbr
+            .get(constant::LATEST_BLOCK.as_bytes())?
+            .unwrap()
+            .value()
+            .to_vec();
+        let val = String::from_utf8(val).unwrap().parse::<u64>().unwrap();
+        Ok(val)
     }
 }
 

@@ -3,6 +3,7 @@ use axum::{routing::get, routing::post, Router};
 use log::{error, info};
 use log4rs;
 use pkg::endpoints;
+use pkg::ethdb::cache;
 use std::collections::BinaryHeap;
 use std::sync::{Arc, Mutex};
 use std::{
@@ -24,7 +25,8 @@ async fn main() {
     let db = Arc::new(Mutex::new(pkg::ethdb::store::DB::new(
         cfg.database.path.clone(),
     )));
-    let io = pkg::handlers::init_iohandlers(db.clone());
+    let cache: Arc<cache::MemStore> = Arc::new(cache::MemStore::new());
+    let io = pkg::handlers::init_iohandlers(db.clone(), cache.clone());
 
     let app_state = Arc::new(pkg::config::AppState { config: cfg, io });
 
@@ -41,8 +43,10 @@ async fn main() {
     // init database and boot sync service
     let mut service = pkg::service::Service::new(db);
     tokio::spawn(async move {
-        service.sync(hs).await;
+        service.sync(hs, cache).await;
     });
+
+    info!("sync service started ...");
 
     // parse command arguments
     let args = Args::parse();

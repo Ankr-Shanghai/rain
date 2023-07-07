@@ -2,7 +2,7 @@
 use crate::constant;
 
 use super::endpoints::Node;
-use super::ethdb;
+use super::ethdb::{self, cache};
 use axum::Error;
 use ethers::abi::Hash;
 use ethers::prelude::*;
@@ -28,7 +28,11 @@ impl Service {
 }
 
 impl Service {
-    pub async fn sync(&mut self, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
+    pub async fn sync(
+        &mut self,
+        heap_sort: Arc<Mutex<BinaryHeap<Node>>>,
+        cache: Arc<cache::MemStore>,
+    ) {
         let mut lst_node = Node {
             url: "https://bsc-dataseed3.ninicoin.io".to_string(),
             delay: 0,
@@ -36,6 +40,12 @@ impl Service {
         };
 
         let mut interval: Interval = tokio::time::interval(Duration::from_secs(2));
+
+        let mut cache_latest_num: u64 = self.db.lock().unwrap().get_block_number().unwrap_or(0);
+        cache.put(
+            constant::LATEST_BLOCK,
+            cache_latest_num.to_string().as_str(),
+        );
 
         loop {
             interval.tick().await;
@@ -47,99 +57,86 @@ impl Service {
 
             let provider: Provider<Http> =
                 Provider::<Http>::try_from(lst_node.get_url().as_str()).unwrap();
+            let arc_provider = Arc::new(provider);
             // first get latest block number from remote node
-            let block_num = provider.get_block_number().await;
-            info!("latest block number {:?}", block_num);
-            // second get current and current - 24 block info
-            let cur: Result<Vec<u8>, redb::Error> = self
-                .db
-                .lock()
-                .unwrap()
-                .get(constant::GLOBAL_TABLE.to_string(), constant::LATEST_BLOCK);
+            let provider_clone = arc_provider.clone();
+            let block_num = provider_clone.get_block_number().await;
+            let block_num_u64 = block_num.unwrap().as_u64();
+            if block_num_u64 < cache_latest_num || cache_latest_num == 0 {
+                cache_latest_num = block_num_u64;
+                continue;
+            }
 
-            if let Ok(lst_num) = cur {
-                let lst_num = String::from_utf8(lst_num).unwrap().parse::<u64>().unwrap();
-                let mut block_num = block_num.unwrap().as_u64();
-                let latest_num = block_num;
-                if block_num > lst_num {
-                    let mut block_info: Vec<Block<Transaction>> = Vec::new();
-                    while block_num > lst_num {
-                        let block: Result<Option<Block<Transaction>>, _> = provider
-                            .get_block_with_txs::<BlockId>(block_num.into())
-                            .await;
-                        if let Ok(Some(block)) = block {
-                            block_info.push(block);
-                        }
-                        block_num -= 1;
-                    }
-                    info!("block info {}", block_info.len());
-                    // save block info to db
-                    for block in block_info.iter() {
-                        let block_num: u64 = block.number.unwrap().as_u64();
-                        // handle block hash
-                        let block_with_hash: Block<TxHash> = block.clone().into();
-                        let block_bytes: String = serde_json::to_string(&block_with_hash).unwrap();
-                        self.db
-                            .lock()
-                            .unwrap()
-                            .put(
-                                constant::BLOCK_TABLE.to_string(),
-                                block_num.to_string().as_bytes(),
-                                block_bytes.as_bytes(),
-                            )
-                            .unwrap();
-                        self.db
-                            .lock()
-                            .unwrap()
-                            .put(
-                                constant::BLOCK_TABLE.to_string(),
-                                block.hash.unwrap().as_bytes(),
-                                block_num.to_string().as_bytes(),
-                            )
-                            .unwrap();
-                        // update transaction info
-                        let txes = block.transactions.clone();
-                        for tx in txes.iter() {
-                            let tx_hash: H256 = tx.hash;
-                            let tx_bytes: String = serde_json::to_string(tx).unwrap();
-                            self.db
-                                .lock()
-                                .unwrap()
-                                .put(
-                                    constant::TX_TABLE.to_string(),
-                                    tx_hash.as_bytes(),
-                                    tx_bytes.as_bytes(),
-                                )
-                                .unwrap();
-                        }
-                    }
-                    // update latest block number
-                    self.db
-                        .lock()
-                        .unwrap()
-                        .put(
-                            constant::GLOBAL_TABLE.to_string(),
-                            constant::LATEST_BLOCK,
-                            latest_num.to_string().as_bytes(),
-                        )
-                        .unwrap();
+            info!("latest block number {:?}", block_num_u64);
 
-                    info!("update latest block number {}", latest_num);
-                }
-            } else {
-                // update latest block number
-                self.db
-                    .lock()
-                    .unwrap()
-                    .put(
-                        constant::GLOBAL_TABLE.to_string(),
-                        constant::LATEST_BLOCK,
-                        block_num.unwrap().as_u64().to_string().as_bytes(),
-                    )
-                    .unwrap();
+            while cache_latest_num < block_num_u64 {
+                cache_latest_num += 1;
+                handler(
+                    arc_provider.clone(),
+                    self.db.clone(),
+                    cache_latest_num.into(),
+                )
+                .await;
+                cache.put(
+                    constant::LATEST_BLOCK,
+                    cache_latest_num.to_string().as_str(),
+                );
             }
         }
     }
+}
+
+async fn handler(provider: Arc<Provider<Http>>, db: Arc<Mutex<ethdb::store::DB>>, num: BlockId) {
+    tokio::spawn(async move {
+        let block: Result<Option<Block<Transaction>>, _> =
+            provider.get_block_with_txs::<BlockId>(num).await;
+        if let Ok(Some(block)) = block {
+            let block_num: u64 = block.number.unwrap().as_u64();
+            let block_with_hash: Block<TxHash> = block.clone().into();
+            let block_bytes: String = serde_json::to_string(&block_with_hash).unwrap();
+            db.lock()
+                .unwrap()
+                .put(
+                    constant::BLOCK_TABLE.to_string(),
+                    block_num.to_string().as_bytes(),
+                    block_bytes.as_bytes(),
+                )
+                .unwrap();
+            db.lock()
+                .unwrap()
+                .put(
+                    constant::BLOCK_TABLE.to_string(),
+                    block.hash.unwrap().as_bytes(),
+                    block_num.to_string().as_bytes(),
+                )
+                .unwrap();
+            // update transaction info
+            let txes = block.transactions.clone();
+            for tx in txes.iter() {
+                let tx_hash: H256 = tx.hash;
+                let tx_bytes: String = serde_json::to_string(tx).unwrap();
+                db.lock()
+                    .unwrap()
+                    .put(
+                        constant::TX_TABLE.to_string(),
+                        tx_hash.as_bytes(),
+                        tx_bytes.as_bytes(),
+                    )
+                    .unwrap();
+            }
+            // update latest block number
+            db.lock()
+                .unwrap()
+                .put(
+                    constant::GLOBAL_TABLE.to_string(),
+                    constant::LATEST_BLOCK.as_bytes(),
+                    block_num.to_string().as_bytes(),
+                )
+                .unwrap();
+
+            info!("update latest block number {}", block_num);
+        }
+    });
 }
 
 pub async fn remote_info<'a>(uris: &'static str, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
