@@ -1,25 +1,25 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, RwLock};
 
 pub struct MemStore {
-    cache: Arc<Mutex<HashMap<String, String>>>,
+    cache: Arc<RwLock<HashMap<String, String>>>,
 }
 
 impl MemStore {
     pub fn new() -> Self {
-        let cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+        let cache: Arc<RwLock<HashMap<String, String>>> = Arc::new(RwLock::new(HashMap::new()));
         MemStore { cache }
     }
 }
 
 impl MemStore {
     pub fn get(&self, key: &str) -> Option<String> {
-        self.cache.lock().unwrap().get(key).cloned()
+        self.cache.read().unwrap().get(key).cloned()
     }
 
     pub fn put(&self, key: &str, value: &str) {
         self.cache
-            .lock()
+            .write()
             .unwrap()
             .insert(key.to_string(), value.to_string());
     }
@@ -27,7 +27,7 @@ impl MemStore {
 
 impl std::default::Default for MemStore {
     fn default() -> Self {
-        let cache: Arc<Mutex<HashMap<String, String>>> = Arc::new(Mutex::new(HashMap::new()));
+        let cache: Arc<RwLock<HashMap<String, String>>> = Arc::new(RwLock::new(HashMap::new()));
         MemStore { cache }
     }
 }

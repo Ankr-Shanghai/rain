@@ -13,16 +13,17 @@ use ethers_core::{
 use log::info;
 use std::borrow::BorrowMut;
 use std::collections::{hash_map::HashMap, BinaryHeap};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, Instant};
+use tokio::task;
 use tokio::time::Interval;
 
 pub struct Service {
-    db: Arc<Mutex<ethdb::store::DB>>,
+    db: Arc<RwLock<ethdb::store::DB>>,
 }
 
 impl Service {
-    pub fn new(db: Arc<Mutex<ethdb::store::DB>>) -> Self {
+    pub fn new(db: Arc<RwLock<ethdb::store::DB>>) -> Self {
         Service { db }
     }
 }
@@ -41,7 +42,7 @@ impl Service {
 
         let mut interval: Interval = tokio::time::interval(Duration::from_secs(2));
 
-        let mut cache_latest_num: u64 = self.db.lock().unwrap().get_block_number().unwrap_or(0);
+        let mut cache_latest_num: u64 = self.db.read().unwrap().get_block_number().unwrap_or(0);
         cache.put(
             constant::LATEST_BLOCK,
             cache_latest_num.to_string().as_str(),
@@ -86,15 +87,15 @@ impl Service {
     }
 }
 
-async fn handler(provider: Arc<Provider<Http>>, db: Arc<Mutex<ethdb::store::DB>>, num: BlockId) {
-    tokio::spawn(async move {
+async fn handler(provider: Arc<Provider<Http>>, db: Arc<RwLock<ethdb::store::DB>>, num: BlockId) {
+    task::spawn(async move {
         let block: Result<Option<Block<Transaction>>, _> =
             provider.get_block_with_txs::<BlockId>(num).await;
         if let Ok(Some(block)) = block {
             let block_num: u64 = block.number.unwrap().as_u64();
             let block_with_hash: Block<TxHash> = block.clone().into();
             let block_bytes: String = serde_json::to_string(&block_with_hash).unwrap();
-            db.lock()
+            db.write()
                 .unwrap()
                 .put(
                     constant::BLOCK_TABLE.to_string(),
@@ -102,7 +103,7 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<Mutex<ethdb::store::DB>>
                     block_bytes.as_bytes(),
                 )
                 .unwrap();
-            db.lock()
+            db.write()
                 .unwrap()
                 .put(
                     constant::BLOCK_TABLE.to_string(),
@@ -115,7 +116,7 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<Mutex<ethdb::store::DB>>
             for tx in txes.iter() {
                 let tx_hash: H256 = tx.hash;
                 let tx_bytes: String = serde_json::to_string(tx).unwrap();
-                db.lock()
+                db.write()
                     .unwrap()
                     .put(
                         constant::TX_TABLE.to_string(),
@@ -125,7 +126,7 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<Mutex<ethdb::store::DB>>
                     .unwrap();
             }
             // update latest block number
-            db.lock()
+            db.write()
                 .unwrap()
                 .put(
                     constant::GLOBAL_TABLE.to_string(),

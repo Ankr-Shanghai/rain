@@ -5,7 +5,7 @@ use log4rs;
 use pkg::endpoints;
 use pkg::ethdb::cache;
 use std::collections::BinaryHeap;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     process::exit,
@@ -22,7 +22,7 @@ async fn main() {
     });
 
     let cfg = pkg::config::Config::from_env().expect("parse env failed");
-    let db = Arc::new(Mutex::new(pkg::ethdb::store::DB::new(
+    let db = Arc::new(RwLock::new(pkg::ethdb::store::DB::new(
         cfg.database.path.clone(),
     )));
     let cache: Arc<cache::MemStore> = Arc::new(cache::MemStore::new());
