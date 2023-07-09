@@ -1,6 +1,9 @@
 use jsonrpc_core::IoHandler;
 use serde::Deserialize;
+use serde_yaml;
 use std::fmt;
+use std::{fs::File, io::Read};
+
 pub struct AppState {
     pub config: Config,
     pub io: IoHandler,
@@ -21,21 +24,21 @@ impl fmt::Display for DbConfig {
 #[derive(Deserialize)]
 pub struct Config {
     pub database: DbConfig,
-    pub uris: String,
+    pub uris: Vec<String>,
 }
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "database: {} \n uris: {}", self.database, self.uris)
+        write!(f, "database: {} \n uris: {:?}", self.database, self.uris)
     }
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, config::ConfigError> {
-        let cfg = config::Config::builder()
-            .add_source(config::Environment::default())
-            .build()
-            .unwrap();
-        cfg.try_deserialize()
+    pub fn from_env() -> Result<Self, serde_yaml::Error> {
+        let mut fh = File::open("config.yaml").expect("file not found");
+        let mut buf = Vec::new();
+        fh.read_to_end(&mut buf)
+            .expect("something went wrong reading the file");
+        serde_yaml::from_str(std::str::from_utf8(&buf).unwrap())
     }
 }

@@ -13,10 +13,8 @@ use std::{
 
 #[tokio::main]
 async fn main() {
-    dotenv::from_filename("env_file").ok();
-
     // init log system
-    log4rs::init_file("config.yaml", Default::default()).unwrap_or_else(|err| {
+    log4rs::init_file("log_config.yaml", Default::default()).unwrap_or_else(|err| {
         println!("init log error {}", err);
         exit(-1)
     });
@@ -37,7 +35,7 @@ async fn main() {
     let uris = app_state.config.uris.clone();
 
     tokio::spawn(async move {
-        pkg::service::remote_info(Box::leak(uris.into_boxed_str()), hsc).await;
+        pkg::service::remote_info(uris, hsc).await;
     });
 
     // init database and boot sync service

@@ -1,16 +1,19 @@
-refresh_rate: 3 seconds
-appenders:
-  stdout:
-    kind: console
-    encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} - {m}{n}"
-  requests:
-    kind: file
-    path: "logs/log.log"
-    encoder:
-      pattern: "{d(%Y-%m-%d %H:%M:%S)} - {m}{n}"
-root:
-  level: info
-  appenders:
-    - stdout
-    - requests
+database:
+  path: node
+  dbname: rpc_data
+uris:
+  - https://rpc.ankr.com/bsc
+  - https://bsc-dataseed3.ninicoin.io
+  - https://bsc-dataseed1.ninicoin.io
+  - https://bsc.rpc.blxrbdn.com
+  - https://bsc-dataseed4.defibit.io
+  - https://bsc-dataseed2.ninicoin.io
+  - https://bsc.blockpi.network/v1/rpc/public
+  - https://bsc-dataseed1.defibit.io
+  - https://bsc.publicnode.com
+  - https://bsc-dataseed2.defibit.io
+  - https://binance.nodereal.io
+  - https://bsc-mainnet.public.blastapi.io
+  - https://bsc-dataseed4.ninicoin.io
+  - https://bsc-dataseed3.defibit.io
+  - https://bsc.meowrpc.com

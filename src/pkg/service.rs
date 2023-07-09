@@ -140,16 +140,18 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<RwLock<ethdb::store::DB>
     });
 }
 
-pub async fn remote_info<'a>(uris: &'static str, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
+pub async fn remote_info(uris: Vec<String>, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
     let mut interval = tokio::time::interval(Duration::from_secs(30));
-    let uri: Vec<&str> = uris.split(",").collect();
     let rmuri: Arc<Mutex<HashMap<&str, ()>>> = Arc::new(Mutex::new(HashMap::new()));
+    let static_uris: &'static str = Box::leak(uris.join(",").into_boxed_str());
     loop {
         heap_sort.lock().unwrap().clear();
 
         interval.tick().await;
 
-        for url in uri.clone().into_iter() {
+        let t_uris: Vec<&str> = static_uris.split(",").collect();
+
+        for url in t_uris {
             if rmuri.lock().unwrap().contains_key(url) {
                 continue;
             }
@@ -162,7 +164,7 @@ pub async fn remote_info<'a>(uris: &'static str, heap_sort: Arc<Mutex<BinaryHeap
                 if let Ok(height) = block {
                     (height.as_u64(), now.elapsed().as_secs())
                 } else {
-                    rmuri_clone.lock().unwrap().insert(url.clone(), ());
+                    rmuri_clone.lock().unwrap().insert(url, ());
                     (0, now.elapsed().as_secs())
                 }
             });
