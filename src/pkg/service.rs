@@ -42,7 +42,7 @@ impl Service {
         };
 
         let mut interval: Interval = tokio::time::interval(Duration::from_secs(2));
-        let mut get_data_interval: Interval = tokio::time::interval(Duration::from_millis(200));
+        let mut get_data_interval: Interval = tokio::time::interval(Duration::from_millis(100));
 
         let mut cache_latest_num: u64 = self.db.read().unwrap().get_block_number().unwrap_or(0);
         cache.put(
@@ -145,6 +145,7 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<RwLock<ethdb::store::DB>
 
 pub async fn remote_info(uris: Vec<String>, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
     let mut interval = tokio::time::interval(Duration::from_secs(30));
+    let mut get_data_interval = tokio::time::interval(Duration::from_millis(30));
     let rmuri: Arc<Mutex<HashMap<&str, ()>>> = Arc::new(Mutex::new(HashMap::new()));
     loop {
         heap_sort.lock().unwrap().clear();
@@ -170,6 +171,7 @@ pub async fn remote_info(uris: Vec<String>, heap_sort: Arc<Mutex<BinaryHeap<Node
             }
             let node = Node::new(url.to_string(), delay, height);
             heap_sort.lock().unwrap().push(node);
+            get_data_interval.tick().await;
         }
     }
 }
