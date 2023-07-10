@@ -14,6 +14,7 @@ use log::info;
 use std::borrow::BorrowMut;
 use std::collections::{hash_map::HashMap, BinaryHeap};
 use std::sync::{Arc, Mutex, RwLock};
+use std::thread;
 use std::time::{Duration, Instant};
 use tokio::task;
 use tokio::time::Interval;
@@ -41,6 +42,7 @@ impl Service {
         };
 
         let mut interval: Interval = tokio::time::interval(Duration::from_secs(2));
+        let mut get_data_interval: Interval = tokio::time::interval(Duration::from_millis(200));
 
         let mut cache_latest_num: u64 = self.db.read().unwrap().get_block_number().unwrap_or(0);
         cache.put(
@@ -82,6 +84,7 @@ impl Service {
                     constant::LATEST_BLOCK,
                     cache_latest_num.to_string().as_str(),
                 );
+                get_data_interval.tick().await;
             }
         }
     }
@@ -143,38 +146,30 @@ async fn handler(provider: Arc<Provider<Http>>, db: Arc<RwLock<ethdb::store::DB>
 pub async fn remote_info(uris: Vec<String>, heap_sort: Arc<Mutex<BinaryHeap<Node>>>) {
     let mut interval = tokio::time::interval(Duration::from_secs(30));
     let rmuri: Arc<Mutex<HashMap<&str, ()>>> = Arc::new(Mutex::new(HashMap::new()));
-    let static_uris: &'static str = Box::leak(uris.join(",").into_boxed_str());
     loop {
         heap_sort.lock().unwrap().clear();
-
         interval.tick().await;
 
-        let t_uris: Vec<&str> = static_uris.split(",").collect();
-
-        for url in t_uris {
-            if rmuri.lock().unwrap().contains_key(url) {
+        for url in &uris {
+            if rmuri.lock().unwrap().contains_key(url.as_str()) {
                 continue;
             }
 
             let rmuri_clone = rmuri.clone();
             let provider = Provider::<Http>::try_from(url).unwrap();
-            let handler = tokio::spawn(async move {
-                let now = Instant::now();
-                let block = provider.get_block_number().await;
-                if let Ok(height) = block {
-                    (height.as_u64(), now.elapsed().as_secs())
-                } else {
-                    rmuri_clone.lock().unwrap().insert(url, ());
-                    (0, now.elapsed().as_secs())
-                }
-            });
-            let rs = handler.await;
-            if let Ok(result) = rs {
-                let node = Node::new(url.to_string(), result.1, result.0);
-                heap_sort.lock().unwrap().push(node);
+            let mut delay: u64 = 0;
+            let mut height: u64 = 0;
+            let now = Instant::now();
+            let block = provider.get_block_number().await;
+            if let Ok(hg) = block {
+                height = hg.as_u64();
+                delay = now.elapsed().as_secs();
             } else {
-                continue;
+                rmuri_clone.lock().unwrap().insert(url, ());
+                delay = now.elapsed().as_secs();
             }
+            let node = Node::new(url.to_string(), delay, height);
+            heap_sort.lock().unwrap().push(node);
         }
     }
 }

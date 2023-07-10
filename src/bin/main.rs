@@ -9,7 +9,9 @@ use std::sync::{Arc, Mutex, RwLock};
 use std::{
     net::{IpAddr, Ipv4Addr, SocketAddr},
     process::exit,
+    thread,
 };
+use tokio::task;
 
 #[tokio::main]
 async fn main() {
@@ -24,23 +26,23 @@ async fn main() {
         cfg.database.path.clone(),
     )));
     let cache: Arc<cache::MemStore> = Arc::new(cache::MemStore::new());
-    let io = pkg::handlers::init_iohandlers(db.clone(), cache.clone());
+    let io: jsonrpc_core::IoHandler = pkg::handlers::init_iohandlers(db.clone(), cache.clone());
 
-    let app_state = Arc::new(pkg::config::AppState { config: cfg, io });
+    let app_state: Arc<pkg::config::AppState> = Arc::new(pkg::config::AppState { config: cfg, io });
 
     // boot routine to do sync remote service info
     let heap_sort: BinaryHeap<endpoints::Node> = BinaryHeap::new();
-    let hs = Arc::new(Mutex::new(heap_sort));
-    let hsc = hs.clone();
-    let uris = app_state.config.uris.clone();
+    let hs: Arc<Mutex<BinaryHeap<endpoints::Node>>> = Arc::new(Mutex::new(heap_sort));
+    let hsc: Arc<Mutex<BinaryHeap<endpoints::Node>>> = hs.clone();
+    let uris: Vec<String> = app_state.config.uris.clone();
 
-    tokio::spawn(async move {
+    task::spawn(async move {
         pkg::service::remote_info(uris, hsc).await;
     });
 
     // init database and boot sync service
     let mut service = pkg::service::Service::new(db);
-    tokio::spawn(async move {
+    task::spawn(async move {
         service.sync(hs, cache).await;
     });
 
